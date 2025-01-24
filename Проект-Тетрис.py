@@ -18,7 +18,6 @@ def remove_empty_columns(arr, _x_offset=0, _keep_counting=True):
         if col.max() == 0:
             if _keep_counting:
                 _x_offset += 1
-            # Remove the current column and try again.
             arr, _x_offset = remove_empty_columns(
                 np.delete(arr, colid, 1), _x_offset, _keep_counting)
             break
@@ -88,9 +87,9 @@ class Block(pygame.sprite.Sprite):
     
     def _create_mask(self):
         """
-        Create the mask attribute from the main surface.
-        The mask is required to check collisions. This should be called
-        after the surface is created or update.
+Создайть атрибут маски из основной поверхности.
+Маска необходима для проверки столкновений. Ее следует вызывать
+после создания или обновления поверхности.
         """
         self.mask = pygame.mask.from_surface(self.image)
     
@@ -127,16 +126,16 @@ class Block(pygame.sprite.Sprite):
     
     def move_right(self, group):
         self.x += 1
-        # Check if we reached the right margin or collided with another
-        # block.
+        # Проверить, достигли ли мы правого края или столкнулись с другим
+        # блоки
         if self.rect.right > GRID_WIDTH or Block.collide(self, group):
             # Rollback.
             self.x -= 1
     
     def move_down(self, group):
         self.y += 1
-        # Check if the block reached the bottom or collided with 
-        # another one.
+        # Проверьте, достиг ли блок дна или столкнулся с
+        # еще одним.
         if self.rect.bottom > GRID_HEIGHT or Block.collide(self, group):
             # Rollback to the previous position.
             self.y -= 1
@@ -149,8 +148,8 @@ class Block(pygame.sprite.Sprite):
         self.rect.width = self.image.get_width()
         self.rect.height = self.image.get_height()
         self._create_mask()
-        # Check the new position doesn't exceed the limits or collide
-        # with other blocks and adjust it if necessary.
+        # Проверь, не выходит ли новая позиция за пределы и 
+        #не сталкивается ли она с другими блоками, и при необходимости отрегулируйте ее.
         while self.rect.right > GRID_WIDTH:
             self.x -= 1
         while self.rect.left < 0:
@@ -227,15 +226,14 @@ class BlocksGroup(pygame.sprite.OrderedUpdates):
     
     def _check_line_completion(self):
         """
-        Check each line of the grid and remove the ones that
-        are complete.
+      Проверить каждую строку сетки и удалите те, которые
+полные.
         """
-        # Start checking from the bottom.
+        #  Начните проверку снизу.
         for i, row in enumerate(self.grid[::-1]):
             if all(row):
                 self.score += 5
-                # Get the blocks affected by the line deletion and
-                # remove duplicates.
+                # Получить блоки, затронутые удалением строки и удалить дубликаты.
                 affected_blocks = list(
                     OrderedDict.fromkeys(self.grid[-1 - i]))
                 
@@ -244,12 +242,11 @@ class BlocksGroup(pygame.sprite.OrderedUpdates):
                     # completed line.
                     block.struct = np.delete(block.struct, y_offset, 0)
                     if block.struct.any():
-                        # Once removed, check if we have empty columns
-                        # since they need to be dropped.
+                        # После удаления проверь, есть ли у нас пустые столбцы, так как их нужно удалить.
                         block.struct, x_offset = \
                             remove_empty_columns(block.struct)
-                        # Compensate the space gone with the columns to
-                        # keep the block's original position.
+                        # Компенсируйте пространство, потерянное вместе со столбцами, чтобы сохранить исходное положение блока.
+
                         block.x += x_offset
                         # Force update.
                         block.redraw()
@@ -257,15 +254,15 @@ class BlocksGroup(pygame.sprite.OrderedUpdates):
                         # If the struct is empty then the block is gone.
                         self.remove(block)
                 
-                # Instead of checking which blocks need to be moved
-                # once a line was completed, just try to move all of
-                # them.
+                # Вместо того, чтобы проверять, какие блоки нужно переместить,
+                # после завершения строки, просто попробуйте переместить все
+                # из них.
                 for block in self:
-                    # Except the current block.
+                    
                     if block.current:
                         continue
-                    # Pull down each block until it reaches the
-                    # bottom or collides with another block.
+                    # Тяните каждый блок вниз, пока он не достигнет 
+                    # дна или не столкнется с другим блоком.
                     while True:
                         try:
                             block.move_down(self)
@@ -273,10 +270,10 @@ class BlocksGroup(pygame.sprite.OrderedUpdates):
                             break
                 
                 self.update_grid()
-                # Since we've updated the grid, now the i counter
-                # is no longer valid, so call the function again
-                # to check if there're other completed lines in the
-                # new grid.
+                # Поскольку мы обновили сетку, счетчик i
+                # больше недействителен, поэтому вызовите функцию еще раз,
+                # чтобы проверить, есть ли другие завершенные строки в
+                # новой сетке.
                 self._check_line_completion()
                 break
     
@@ -318,7 +315,7 @@ class BlocksGroup(pygame.sprite.OrderedUpdates):
             self.update_grid()
     
     def move_current_block(self):
-        # First check if there's something to move.
+        # Сначала проверьте, есть ли что-то, что можно переместить.
         if self._current_block_movement_heading is None:
             return
         action = {
@@ -327,8 +324,8 @@ class BlocksGroup(pygame.sprite.OrderedUpdates):
             pygame.K_RIGHT: self.current_block.move_right
         }
         try:
-            # Each function requires the group as the first argument
-            # to check any possible collision.
+            # Каждая функция требует группу в качестве первого аргумента
+            # для проверки любых возможных столкновений.
             action[self._current_block_movement_heading](self)
         except BottomReached:
             self.stop_moving_current_block()
@@ -348,14 +345,13 @@ class BlocksGroup(pygame.sprite.OrderedUpdates):
             self._current_block_movement_heading = None
     
     def rotate_current_block(self):
-        # Prevent SquareBlocks rotation.
         if not isinstance(self.current_block, SquareBlock):
             self.current_block.rotate(self)
             self.update_grid()
 
 
 def draw_grid(background):
-    """Draw the background grid."""
+    """Нарисуйте фоновую сетку."""
     grid_color = 50, 50, 50
     # Vertical lines.
     for i in range(11):
@@ -382,19 +378,19 @@ def main():
     run = True
     paused = False
     game_over = False
-    # Create background.
+    #Задний фон .
     background = pygame.Surface(screen.get_size())
     bgcolor = (0, 0, 0)
     background.fill(bgcolor)
     # Draw the grid on top of the background.
     draw_grid(background)
-    # This makes blitting faster.
+    # Это ускоряет блиттинг.
     background = background.convert()
     
     try:
         font = pygame.font.Font("Roboto-Regular.ttf", 20)
     except OSError:
-        # If the font file is not available, the default will be used.
+        # Если файл шрифта недоступен, будет использован файл по умолчанию.
         font = pygame.font.Font(pygame.font.get_default_font(), 20)
     next_block_text = font.render(
         "Next figure:", True, (255, 255, 255), bgcolor)
@@ -403,7 +399,7 @@ def main():
     game_over_text = font.render(
         "¡Game over!", True, (255, 220, 0), bgcolor)
     
-    # Event constants.
+
     MOVEMENT_KEYS = pygame.K_LEFT, pygame.K_RIGHT, pygame.K_DOWN
     EVENT_UPDATE_CURRENT_BLOCK = pygame.USEREVENT + 1
     EVENT_MOVE_CURRENT_BLOCK = pygame.USEREVENT + 2
@@ -442,7 +438,7 @@ def main():
             except TopReached:
                 game_over = True
         
-        # Draw background and grid.
+        # Нарисуйте фон и сетку.
         screen.blit(background, (0, 0))
         # Blocks.
         blocks.draw(screen)
